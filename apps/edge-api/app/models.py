@@ -71,3 +71,17 @@ class NearestDriversQuery(BaseModel):
     latitude: float = Field(ge=-90, le=90)
     maxDistanceMeters: int = Field(default=3000, ge=100, le=50000)
     limit: int = Field(default=5, ge=1, le=50)
+
+
+class DriverLocationUpdateIn(BaseModel):
+    driverId: str = Field(min_length=3, max_length=128)
+    status: DriverStatus = DriverStatus.online
+    location: GeoPoint
+    speedKph: float | None = Field(default=None, ge=0, le=240)
+    heading: float | None = Field(default=None, ge=0, le=360)
+
+
+class DriverLocationEvent(BaseModel):
+    type: str = "driver.location.updated"
+    timestamp: datetime
+    payload: NearestDriverOut

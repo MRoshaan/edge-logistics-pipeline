@@ -2,16 +2,17 @@
 
 import { DispatchTable } from "@/components/dispatch-table";
 import { MapView } from "@/components/map-view";
-import { useNearestDrivers } from "@/hooks/use-nearest-drivers";
+import { useDispatchSocket } from "@/hooks/use-dispatch-socket";
+import { useFleetStore } from "@/lib/fleet-store";
 
 export default function Page() {
-  const { data, loading, error, selectedPoint, setSelectedPoint } = useNearestDrivers(5000);
+  useDispatchSocket();
 
-  const center = data
-    ? ([data.center.coordinates[1], data.center.coordinates[0]] as [number, number])
-    : ([24.8607, 67.0011] as [number, number]);
-
-  const drivers = data?.drivers ?? [];
+  const center = useFleetStore((state) => state.center);
+  const selectedPoint = useFleetStore((state) => state.selectedPoint);
+  const setSelectedPoint = useFleetStore((state) => state.setSelectedPoint);
+  const connection = useFleetStore((state) => state.connection);
+  const drivers = useFleetStore((state) => Object.values(state.driversById));
 
   return (
     <main className="mx-auto grid min-h-screen max-w-7xl grid-cols-1 gap-4 p-4 lg:grid-cols-[2fr_1fr]">
@@ -27,8 +28,7 @@ export default function Page() {
           <p className="text-xs text-muted-foreground">
             Query center: {selectedPoint.latitude.toFixed(5)}, {selectedPoint.longitude.toFixed(5)}
           </p>
-          {loading ? <p className="text-xs text-accent">Syncing...</p> : null}
-          {error ? <p className="text-xs text-red-400">{error}</p> : null}
+          <p className="text-xs text-accent">Realtime socket: {connection}</p>
         </header>
         <MapView
           center={center}

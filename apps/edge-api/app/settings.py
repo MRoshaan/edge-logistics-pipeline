@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     mongodb_uri: str = Field(alias="MONGODB_URI")
     mongodb_database_name: str = Field(alias="MONGODB_DATABASE_NAME")
     allowed_origin: str = Field(alias="ALLOWED_ORIGIN")
+    simulator_api_token: str = Field(default="local-dev-simulator-token", alias="SIMULATOR_API_TOKEN")
 
 
 

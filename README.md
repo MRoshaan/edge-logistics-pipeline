@@ -18,7 +18,9 @@ Production-style starter for a geospatial telemetry engine:
 │  │  │  ├─ routes.py
 │  │  │  ├─ settings.py
 │  │  │  └─ services/
+│  │  │     ├─ connection_manager.py
 │  │  │     └─ database.py
+│  │  ├─ driver_pinger.py
 │  │  ├─ seed.py
 │  │  ├─ pyproject.toml
 │  │  └─ .env.example
@@ -64,6 +66,12 @@ Seed dummy Karachi drivers:
 python seed.py
 ```
 
+Start realtime driver simulator (standalone process):
+
+```bash
+python driver_pinger.py
+```
+
 ## 3) Command Center
 
 From `apps/command-center`:
@@ -83,4 +91,11 @@ Set these values in `apps/edge-api/.env`:
 MONGODB_URI=mongodb+srv://<user>:<password>@cluster0.example.mongodb.net/?retryWrites=true&w=majority
 MONGODB_DATABASE_NAME=logistics
 ALLOWED_ORIGIN=http://localhost:3000
+SIMULATOR_API_TOKEN=local-dev-simulator-token
+```
+
+Set this in `apps/command-center/.env.local`:
+
+```env
+NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
 ```

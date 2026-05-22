@@ -26,7 +26,7 @@ export function DispatchTable({ drivers }: DispatchTableProps) {
               </tr>
             ) : (
               drivers.map((driver) => (
-                <tr key={driver.driverId} className="border-t border-border/50">
+                <tr key={driver.id} className="border-t border-border/50">
                   <td className="py-2">{driver.driverId}</td>
                   <td className="py-2 capitalize">{driver.status}</td>
                   <td className="py-2">{Math.round(driver.distanceMeters)} m</td>

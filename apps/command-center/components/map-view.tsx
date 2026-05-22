@@ -3,6 +3,7 @@
 import "leaflet/dist/leaflet.css";
 
 import dynamic from "next/dynamic";
+import { useEffect, useRef, useState } from "react";
 import { useMap, useMapEvents } from "react-leaflet";
 
 import { NearestDriver } from "@/lib/types";
@@ -67,21 +68,59 @@ export function MapView({ center, drivers, onMapClick }: MapViewProps) {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
-        {drivers.map((driver) => {
-          const [lon, lat] = driver.location.coordinates;
-          return (
-            <Marker key={driver.driverId} position={[lat, lon]}>
-              <Popup>
-                <div>
-                  <div>{driver.driverId}</div>
-                  <div>Status: {driver.status}</div>
-                  <div>{Math.round(driver.distanceMeters)} m away</div>
-                </div>
-              </Popup>
-            </Marker>
-          );
-        })}
+        {drivers.map((driver) => (
+          <DriverMarker key={driver.driverId} driver={driver} />
+        ))}
       </MapContainer>
     </div>
+  );
+}
+
+function DriverMarker({ driver }: { driver: NearestDriver }) {
+  const [lon, lat] = driver.location.coordinates;
+  const [position, setPosition] = useState<[number, number]>([lat, lon]);
+  const animationRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const start = position;
+    const target: [number, number] = [lat, lon];
+    const startTime = performance.now();
+    const durationMs = 800;
+
+    const step = (currentTime: number) => {
+      const t = Math.min((currentTime - startTime) / durationMs, 1);
+      const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      setPosition([
+        start[0] + (target[0] - start[0]) * eased,
+        start[1] + (target[1] - start[1]) * eased,
+      ]);
+
+      if (t < 1) {
+        animationRef.current = requestAnimationFrame(step);
+      }
+    };
+
+    if (animationRef.current !== null) {
+      cancelAnimationFrame(animationRef.current);
+    }
+    animationRef.current = requestAnimationFrame(step);
+
+    return () => {
+      if (animationRef.current !== null) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [lat, lon]);
+
+  return (
+    <Marker position={position}>
+      <Popup>
+        <div>
+          <div>{driver.driverId}</div>
+          <div>Status: {driver.status}</div>
+          <div>{Math.round(driver.distanceMeters)} m away</div>
+        </div>
+      </Popup>
+    </Marker>
   );
 }
