@@ -1,0 +1,50 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": [
+      "driverId",
+      "status",
+      "location",
+      "updatedAt"
+    ],
+    "properties": {
+      "driverId": {
+        "bsonType": "string",
+        "minLength": 3,
+        "maxLength": 64
+      },
+      "status": {
+        "enum": ["active", "busy", "offline"]
+      },
+      "location": {
+        "bsonType": "object",
+        "required": ["type", "coordinates"],
+        "properties": {
+          "type": { "enum": ["Point"] },
+          "coordinates": {
+            "bsonType": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": [
+              { "bsonType": "double", "minimum": -180, "maximum": 180 },
+              { "bsonType": "double", "minimum": -90, "maximum": 90 }
+            ]
+          }
+        }
+      },
+      "heading": {
+        "bsonType": ["double", "null"],
+        "minimum": 0,
+        "maximum": 360
+      },
+      "speedKph": {
+        "bsonType": ["double", "null"],
+        "minimum": 0,
+        "maximum": 240
+      },
+      "updatedAt": {
+        "bsonType": "date"
+      }
+    }
+  }
+}

@@ -1,0 +1,35 @@
+[
+  {
+    "driverId": "KHI-1001",
+    "status": "active",
+    "location": {
+      "type": "Point",
+      "coordinates": [67.0099, 24.8615]
+    },
+    "heading": 60,
+    "speedKph": 32,
+    "updatedAt": { "$date": "2026-05-22T12:00:00Z" }
+  },
+  {
+    "driverId": "KHI-1002",
+    "status": "active",
+    "location": {
+      "type": "Point",
+      "coordinates": [67.0474, 24.9263]
+    },
+    "heading": 180,
+    "speedKph": 18,
+    "updatedAt": { "$date": "2026-05-22T12:00:00Z" }
+  },
+  {
+    "driverId": "KHI-1003",
+    "status": "busy",
+    "location": {
+      "type": "Point",
+      "coordinates": [67.0822, 24.9056]
+    },
+    "heading": 312,
+    "speedKph": 45,
+    "updatedAt": { "$date": "2026-05-22T12:00:00Z" }
+  }
+]
