@@ -1,4 +1,4 @@
-export type DriverStatus = "active" | "busy" | "offline";
+export type DriverStatus = "online" | "active" | "busy" | "offline";
 
 export type GeoPoint = {
   type: "Point";
@@ -6,11 +6,12 @@ export type GeoPoint = {
 };
 
 export type NearestDriver = {
+  id: string;
   driverId: string;
   status: DriverStatus;
   distanceMeters: number;
   location: GeoPoint;
-  updatedAt: string;
+  updatedAt?: string;
 };
 
 export type NearestDriversResponse = {

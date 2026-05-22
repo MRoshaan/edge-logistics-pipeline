@@ -1,8 +1,8 @@
 # Geospatial Logistics API Monorepo
 
-Production-style starter for a serverless geospatial telemetry engine:
+Production-style starter for a geospatial telemetry engine:
 
-- `apps/edge-api`: Cloudflare Workers (Python) + FastAPI + MongoDB Atlas Data API
+- `apps/edge-api`: FastAPI + MongoDB Motor async driver
 - `apps/command-center`: Next.js dispatcher UI with live map and nearest-driver panel
 - `infra/mongodb`: MongoDB schema and index setup scripts
 
@@ -18,10 +18,10 @@ Production-style starter for a serverless geospatial telemetry engine:
 │  │  │  ├─ routes.py
 │  │  │  ├─ settings.py
 │  │  │  └─ services/
-│  │  │     └─ atlas_data_api.py
-│  │  ├─ worker.py
+│  │  │     └─ database.py
+│  │  ├─ seed.py
 │  │  ├─ pyproject.toml
-│  │  └─ wrangler.toml
+│  │  └─ .env.example
 │  └─ command-center/
 │     ├─ app/
 │     ├─ components/
@@ -38,14 +38,13 @@ Production-style starter for a serverless geospatial telemetry engine:
 ## 1) MongoDB Atlas Setup
 
 1. Create an Atlas M0 cluster.
-2. Create database `fleet_ops` and collection `drivers`.
-3. Enable Atlas Data API for this project.
-4. Add index using `infra/mongodb/create_indexes.js`.
+2. Create database `logistics` and collection `drivers`.
+3. Add index using `infra/mongodb/create_indexes.js`.
 
 `create_indexes.js` command in Atlas shell:
 
 ```javascript
-use("fleet_ops");
+use("logistics");
 db.drivers.createIndex({ location: "2dsphere" });
 db.drivers.createIndex({ status: 1, updatedAt: -1 });
 ```
@@ -55,14 +54,14 @@ db.drivers.createIndex({ status: 1, updatedAt: -1 });
 From `apps/edge-api`:
 
 ```bash
-uv sync
-uv run fastapi dev app/main.py
+python -m pip install -e .
+python -m fastapi dev app/main.py
 ```
 
-Cloudflare local run:
+Seed dummy Karachi drivers:
 
 ```bash
-uv run pywrangler dev
+python seed.py
 ```
 
 ## 3) Command Center
@@ -76,21 +75,12 @@ npm run dev
 
 App defaults to Karachi map center and polls nearest drivers every 5 seconds.
 
-## 4) Secrets & Deploy
+## 4) Environment
 
-Edge API secrets in Cloudflare:
+Set these values in `apps/edge-api/.env`:
 
-```bash
-uv run pywrangler secret put ATLAS_DATA_API_KEY
-uv run pywrangler secret put ATLAS_DATA_API_URL
-uv run pywrangler secret put ATLAS_DATA_SOURCE
-uv run pywrangler secret put ATLAS_DATABASE
-uv run pywrangler secret put ATLAS_COLLECTION
-uv run pywrangler secret put ALLOWED_ORIGIN
-```
-
-Deploy:
-
-```bash
-uv run pywrangler deploy
+```env
+MONGODB_URI=mongodb+srv://<user>:<password>@cluster0.example.mongodb.net/?retryWrites=true&w=majority
+MONGODB_DATABASE_NAME=logistics
+ALLOWED_ORIGIN=http://localhost:3000
 ```

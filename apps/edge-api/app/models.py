@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, field_validator
 
 
 class DriverStatus(str, Enum):
+    online = "online"
     active = "active"
     busy = "busy"
     offline = "offline"
@@ -51,6 +52,7 @@ class DriverTelemetryIn(BaseModel):
 
 
 class NearestDriverOut(BaseModel):
+    id: str
     driverId: str
     status: DriverStatus
     distanceMeters: Meters

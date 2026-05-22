@@ -1,28 +1,29 @@
 import { NearestDriversResponse } from "@/lib/types";
 
-const FALLBACK_CENTER = { longitude: 67.0011, latitude: 24.8607 };
+type FetchNearestDriversParams = {
+  longitude: number;
+  latitude: number;
+  maxDistanceMeters?: number;
+};
 
-export async function fetchNearestDrivers(): Promise<NearestDriversResponse> {
-  const baseUrl = process.env.NEXT_PUBLIC_EDGE_API_BASE_URL;
+export async function fetchNearestDrivers({
+  longitude,
+  latitude,
+  maxDistanceMeters = 5000,
+}: FetchNearestDriversParams): Promise<NearestDriversResponse> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
 
-  if (!baseUrl) {
-    return {
-      center: {
-        type: "Point",
-        coordinates: [FALLBACK_CENTER.longitude, FALLBACK_CENTER.latitude],
-      },
-      limit: 5,
-      drivers: [],
-    };
-  }
+  const searchParams = new URLSearchParams({
+    longitude: String(longitude),
+    latitude: String(latitude),
+    maxDistanceMeters: String(maxDistanceMeters),
+  });
+  const url = `${baseUrl}/api/v1/drivers/nearby?${searchParams.toString()}`;
 
-  const url = new URL("/api/v1/dispatch/nearest", baseUrl);
-  url.searchParams.set("longitude", String(FALLBACK_CENTER.longitude));
-  url.searchParams.set("latitude", String(FALLBACK_CENTER.latitude));
-  url.searchParams.set("maxDistanceMeters", "3000");
-  url.searchParams.set("limit", "5");
+  console.log("API Fetching URL...", url);
 
-  const response = await fetch(url.toString(), {
+  const response = await fetch(url, {
+    method: "GET",
     cache: "no-store",
   });
 
@@ -30,5 +31,12 @@ export async function fetchNearestDrivers(): Promise<NearestDriversResponse> {
     throw new Error(`Failed to fetch drivers: ${response.status}`);
   }
 
-  return (await response.json()) as NearestDriversResponse;
+  const data = (await response.json()) as Partial<NearestDriversResponse>;
+  console.log("API Response Data", data);
+
+  return {
+    center: data.center ?? { type: "Point", coordinates: [longitude, latitude] },
+    limit: data.limit ?? 5,
+    drivers: Array.isArray(data.drivers) ? data.drivers : [],
+  };
 }

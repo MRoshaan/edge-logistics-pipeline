@@ -5,7 +5,7 @@ import { MapView } from "@/components/map-view";
 import { useNearestDrivers } from "@/hooks/use-nearest-drivers";
 
 export default function Page() {
-  const { data, loading, error } = useNearestDrivers(5000);
+  const { data, loading, error, selectedPoint, setSelectedPoint } = useNearestDrivers(5000);
 
   const center = data
     ? ([data.center.coordinates[1], data.center.coordinates[0]] as [number, number])
@@ -22,12 +22,22 @@ export default function Page() {
           </p>
           <h1 className="text-2xl font-bold">Fleet Command Center</h1>
           <p className="text-sm text-muted-foreground">
-            Live nearest active drivers using Cloudflare edge geospatial queries.
+            Live nearest active drivers using Motor-powered geospatial queries.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Query center: {selectedPoint.latitude.toFixed(5)}, {selectedPoint.longitude.toFixed(5)}
           </p>
           {loading ? <p className="text-xs text-accent">Syncing...</p> : null}
           {error ? <p className="text-xs text-red-400">{error}</p> : null}
         </header>
-        <MapView center={center} drivers={drivers} />
+        <MapView
+          center={center}
+          drivers={drivers}
+          onMapClick={(point) => {
+            console.log("Map Click Handler Updating Query Center", point);
+            setSelectedPoint(point);
+          }}
+        />
       </section>
       <aside>
         <DispatchTable drivers={drivers} />

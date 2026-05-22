@@ -3,6 +3,7 @@
 import "leaflet/dist/leaflet.css";
 
 import dynamic from "next/dynamic";
+import { useMap, useMapEvents } from "react-leaflet";
 
 import { NearestDriver } from "@/lib/types";
 
@@ -23,9 +24,35 @@ const Popup = dynamic(async () => (await import("react-leaflet")).Popup, {
 type MapViewProps = {
   center: [number, number];
   drivers: NearestDriver[];
+  onMapClick: (point: { longitude: number; latitude: number }) => void;
 };
 
-export function MapView({ center, drivers }: MapViewProps) {
+function MapClickHandler({
+  onMapClick,
+}: {
+  onMapClick: (point: { longitude: number; latitude: number }) => void;
+}) {
+  useMapEvents({
+    click(event) {
+      const point = {
+        longitude: event.latlng.lng,
+        latitude: event.latlng.lat,
+      };
+      console.log("Map Clicked", point);
+      onMapClick(point);
+    },
+  });
+
+  return null;
+}
+
+function RecenterMap({ center }: { center: [number, number] }) {
+  const map = useMap();
+  map.setView(center);
+  return null;
+}
+
+export function MapView({ center, drivers, onMapClick }: MapViewProps) {
   return (
     <div className="h-[70vh] w-full overflow-hidden rounded-2xl border border-border">
       <MapContainer
@@ -34,6 +61,8 @@ export function MapView({ center, drivers }: MapViewProps) {
         scrollWheelZoom
         className="h-full w-full"
       >
+        <MapClickHandler onMapClick={onMapClick} />
+        <RecenterMap center={center} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"

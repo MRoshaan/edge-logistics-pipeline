@@ -1,10 +1,10 @@
 from fastapi import APIRouter
 
 from app.models import DriverTelemetryIn, GeoPoint, NearestDriversQuery, NearestDriversResponse
-from app.services.atlas_data_api import AtlasDataAPIClient
+from app.services.database import get_database
 
 router = APIRouter()
-atlas = AtlasDataAPIClient()
+db = get_database()
 
 
 @router.get("/health")
@@ -14,32 +14,79 @@ async def health() -> dict[str, str]:
 
 @router.post("/telemetry")
 async def ingest_telemetry(payload: DriverTelemetryIn) -> dict:
-    result = await atlas.upsert_driver_telemetry(payload)
+    result = await db["drivers"].update_one(
+        {"driverId": payload.driverId},
+        {
+            "$set": {
+                "driverId": payload.driverId,
+                "status": payload.status.value,
+                "location": payload.location.model_dump(),
+                "heading": payload.heading,
+                "speedKph": payload.speedKph,
+                "updatedAt": payload.timestamp,
+            }
+        },
+        upsert=True,
+    )
     return {
         "acknowledged": True,
-        "matchedCount": result.get("matchedCount", 0),
-        "modifiedCount": result.get("modifiedCount", 0),
-        "upsertedId": result.get("upsertedId"),
+        "matchedCount": result.matched_count,
+        "modifiedCount": result.modified_count,
+        "upsertedId": str(result.upserted_id) if result.upserted_id else None,
     }
 
 
-@router.get("/dispatch/nearest", response_model=NearestDriversResponse)
+@router.get("/drivers/nearby", response_model=NearestDriversResponse)
 async def nearest_drivers(
     longitude: float,
     latitude: float,
     maxDistanceMeters: int = 3000,
-    limit: int = 5,
 ) -> NearestDriversResponse:
     query = NearestDriversQuery(
         longitude=longitude,
         latitude=latitude,
         maxDistanceMeters=maxDistanceMeters,
-        limit=limit,
+        limit=5,
     )
-    drivers = await atlas.get_nearest_active_drivers(query)
+    pipeline = [
+        {
+            "$geoNear": {
+                "near": {"type": "Point", "coordinates": [query.longitude, query.latitude]},
+                "distanceField": "distanceMeters",
+                "maxDistance": query.maxDistanceMeters,
+                "spherical": True,
+                "query": {"status": {"$in": ["active", "online"]}},
+            }
+        },
+        {
+            "$project": {
+                "_id": 1,
+                "driverId": 1,
+                "status": 1,
+                "location": 1,
+                "distanceMeters": 1,
+                "updatedAt": 1,
+            }
+        },
+        {"$limit": 5},
+    ]
+
+    documents = await db["drivers"].aggregate(pipeline).to_list(length=5)
+    drivers = []
+    for doc in documents:
+        drivers.append(
+            {
+                "id": str(doc["_id"]),
+                "driverId": doc.get("driverId", str(doc["_id"])),
+                "status": doc["status"],
+                "distanceMeters": float(doc["distanceMeters"]),
+                "location": doc["location"],
+                "updatedAt": doc["updatedAt"],
+            }
+        )
 
     return NearestDriversResponse(
         center=GeoPoint(type="Point", coordinates=[query.longitude, query.latitude]),
-        limit=query.limit,
+        limit=5,
         drivers=drivers,
     )

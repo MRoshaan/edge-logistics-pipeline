@@ -1,16 +1,15 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
+
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore", populate_by_name=True)
 
-    atlas_data_api_url: str
-    atlas_data_api_key: str
-    atlas_data_source: str = "Cluster0"
-    atlas_database: str = "fleet_ops"
-    atlas_collection: str = "drivers"
-    allowed_origin: str = "http://localhost:3000"
+    mongodb_uri: str = Field(alias="MONGODB_URI")
+    mongodb_database_name: str = Field(alias="MONGODB_DATABASE_NAME")
+    allowed_origin: str = Field(alias="ALLOWED_ORIGIN")
 
 
 

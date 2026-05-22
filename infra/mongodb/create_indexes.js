@@ -1,4 +1,4 @@
-use("fleet_ops");
+use("logistics");
 
 db.drivers.createIndex({ location: "2dsphere" });
 db.drivers.createIndex({ status: 1, updatedAt: -1 });

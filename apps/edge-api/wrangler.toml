@@ -1,9 +1,0 @@
-name = "fleet-edge-api"
-main = "worker.py"
-compatibility_date = "2026-05-22"
-
-[vars]
-ATLAS_DATABASE = "fleet_ops"
-ATLAS_COLLECTION = "drivers"
-ATLAS_DATA_SOURCE = "Cluster0"
-ALLOWED_ORIGIN = "https://your-app.vercel.app"
