@@ -1,4 +1,6 @@
 from datetime import datetime, timezone
+from itertools import count
+from uuid import uuid4
 
 from fastapi import APIRouter, Header, HTTPException
 
@@ -19,6 +21,7 @@ from app.settings import get_settings
 router = APIRouter()
 db = get_database()
 settings = get_settings()
+EVENT_SEQ = count(1)
 
 
 @router.get("/health")
@@ -83,6 +86,8 @@ async def ingest_simulated_telemetry(
         updatedAt=now,
     )
     event = DriverLocationEvent(
+        eventId=str(uuid4()),
+        seq=next(EVENT_SEQ),
         timestamp=now,
         payload=event_payload,
     )

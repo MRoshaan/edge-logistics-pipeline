@@ -1,9 +1,15 @@
 "use client";
 
+import dynamic from "next/dynamic";
+
 import { DispatchTable } from "@/components/dispatch-table";
-import { MapView } from "@/components/map-view";
 import { useDispatchSocket } from "@/hooks/use-dispatch-socket";
 import { useFleetStore } from "@/lib/fleet-store";
+
+const MapView = dynamic(
+  async () => (await import("@/components/map-view")).MapView,
+  { ssr: false }
+);
 
 export default function Page() {
   useDispatchSocket();
@@ -12,7 +18,13 @@ export default function Page() {
   const selectedPoint = useFleetStore((state) => state.selectedPoint);
   const setSelectedPoint = useFleetStore((state) => state.setSelectedPoint);
   const connection = useFleetStore((state) => state.connection);
-  const drivers = useFleetStore((state) => Object.values(state.driversById));
+  const lastMessageAt = useFleetStore((state) => state.lastMessageAt);
+  const reconnectCount = useFleetStore((state) => state.reconnectCount);
+  const visibleDriverIds = useFleetStore((state) => state.visibleDriverIds);
+  const driversById = useFleetStore((state) => state.driversById);
+  const drivers = visibleDriverIds
+    .map((driverId) => driversById[driverId])
+    .filter((driver) => Boolean(driver));
 
   return (
     <main className="mx-auto grid min-h-screen max-w-7xl grid-cols-1 gap-4 p-4 lg:grid-cols-[2fr_1fr]">
@@ -29,6 +41,10 @@ export default function Page() {
             Query center: {selectedPoint.latitude.toFixed(5)}, {selectedPoint.longitude.toFixed(5)}
           </p>
           <p className="text-xs text-accent">Realtime socket: {connection}</p>
+          <p className="text-xs text-muted-foreground">
+            Last event: {lastMessageAt ? new Date(lastMessageAt).toLocaleTimeString() : "waiting"}
+          </p>
+          <p className="text-xs text-muted-foreground">Reconnects: {reconnectCount}</p>
         </header>
         <MapView
           center={center}

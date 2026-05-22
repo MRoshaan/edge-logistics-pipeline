@@ -2,6 +2,10 @@
 
 import "leaflet/dist/leaflet.css";
 
+import L from "leaflet";
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { useMap, useMapEvents } from "react-leaflet";
@@ -21,6 +25,41 @@ const Marker = dynamic(async () => (await import("react-leaflet")).Marker, {
 const Popup = dynamic(async () => (await import("react-leaflet")).Popup, {
   ssr: false,
 });
+
+let isLeafletIconPatched = false;
+
+const markerIconUrl = typeof markerIcon === "string" ? markerIcon : markerIcon.src;
+const markerIcon2xUrl = typeof markerIcon2x === "string" ? markerIcon2x : markerIcon2x.src;
+const markerShadowUrl = typeof markerShadow === "string" ? markerShadow : markerShadow.src;
+
+const DEFAULT_MARKER_ICON = L.icon({
+  iconRetinaUrl: markerIcon2xUrl,
+  iconUrl: markerIconUrl,
+  shadowUrl: markerShadowUrl,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
+
+function patchLeafletDefaultIcon() {
+  if (isLeafletIconPatched) {
+    return;
+  }
+
+  delete (L.Icon.Default.prototype as L.Icon.Default & { _getIconUrl?: unknown })._getIconUrl;
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl: markerIcon2xUrl,
+    iconUrl: markerIconUrl,
+    shadowUrl: markerShadowUrl,
+  });
+
+  isLeafletIconPatched = true;
+}
+
+if (typeof window !== "undefined") {
+  patchLeafletDefaultIcon();
+}
 
 type MapViewProps = {
   center: [number, number];
@@ -113,7 +152,7 @@ function DriverMarker({ driver }: { driver: NearestDriver }) {
   }, [lat, lon]);
 
   return (
-    <Marker position={position}>
+    <Marker position={position} icon={DEFAULT_MARKER_ICON}>
       <Popup>
         <div>
           <div>{driver.driverId}</div>

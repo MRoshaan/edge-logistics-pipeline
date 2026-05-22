@@ -82,6 +82,8 @@ class DriverLocationUpdateIn(BaseModel):
 
 
 class DriverLocationEvent(BaseModel):
+    eventId: str
+    seq: int
     type: str = "driver.location.updated"
     timestamp: datetime
     payload: NearestDriverOut

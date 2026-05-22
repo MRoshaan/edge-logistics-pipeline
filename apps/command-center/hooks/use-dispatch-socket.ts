@@ -6,7 +6,10 @@ import { fetchNearestDrivers } from "@/lib/api";
 import { useFleetStore } from "@/lib/fleet-store";
 
 type DispatchEvent = {
+  eventId?: string;
+  seq?: number;
   type: string;
+  timestamp?: string;
   payload?: {
     id?: string;
     driverId?: string;
@@ -27,27 +30,41 @@ function getSocketUrl() {
 
 export function useDispatchSocket() {
   const selectedPoint = useFleetStore((state) => state.selectedPoint);
-  const setSnapshot = useFleetStore((state) => state.setSnapshot);
-  const mergeDriverUpdate = useFleetStore((state) => state.mergeDriverUpdate);
-  const setConnection = useFleetStore((state) => state.setConnection);
   const socketRef = useRef<WebSocket | null>(null);
+  const lastSnapshotKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    const snapshotKey = `${selectedPoint.latitude.toFixed(6)}:${selectedPoint.longitude.toFixed(6)}`;
+
+    if (lastSnapshotKeyRef.current === snapshotKey) {
+      return;
+    }
+    lastSnapshotKeyRef.current = snapshotKey;
 
     const loadSnapshot = async () => {
-      const snapshot = await fetchNearestDrivers({
-        longitude: selectedPoint.longitude,
-        latitude: selectedPoint.latitude,
-        maxDistanceMeters: 5000,
-      });
-      if (!cancelled) {
-        setSnapshot(snapshot);
+      try {
+        const snapshot = await fetchNearestDrivers({
+          longitude: selectedPoint.longitude,
+          latitude: selectedPoint.latitude,
+          maxDistanceMeters: 5000,
+        });
+        if (!cancelled) {
+          useFleetStore.getState().setSnapshot(snapshot);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Snapshot fetch failed", error);
+        }
       }
     };
 
     void loadSnapshot();
-  }, [selectedPoint.latitude, selectedPoint.longitude, setSnapshot]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedPoint.latitude, selectedPoint.longitude]);
 
   useEffect(() => {
     let retryTimer: number | null = null;
@@ -57,7 +74,7 @@ export function useDispatchSocket() {
         socketRef.current.close();
       }
 
-      setConnection("connecting");
+      useFleetStore.getState().setConnection("connecting");
       const url = getSocketUrl();
       console.log("Dispatch WS connecting", url);
 
@@ -66,15 +83,20 @@ export function useDispatchSocket() {
 
       ws.onopen = () => {
         console.log("Dispatch WS open");
-        setConnection("open");
+        useFleetStore.getState().setConnection("open");
       };
 
       ws.onmessage = (event) => {
         try {
           const parsed = JSON.parse(event.data) as DispatchEvent;
           console.log("Dispatch WS event", parsed);
+          useFleetStore.getState().markSocketMessage(parsed.timestamp);
           if (parsed.type === "driver.location.updated" && parsed.payload) {
-            mergeDriverUpdate(parsed.payload);
+            useFleetStore.getState().mergeDriverEvent({
+              driver: parsed.payload,
+              seq: parsed.seq,
+              timestamp: parsed.timestamp,
+            });
           }
         } catch (error) {
           console.error("Dispatch WS parse error", error);
@@ -86,7 +108,8 @@ export function useDispatchSocket() {
       };
 
       ws.onclose = () => {
-        setConnection("closed");
+        useFleetStore.getState().setConnection("closed");
+        useFleetStore.getState().incrementReconnectCount();
         console.log("Dispatch WS closed, retrying in 2s");
         retryTimer = window.setTimeout(connect, 2000);
       };
@@ -101,7 +124,7 @@ export function useDispatchSocket() {
       if (socketRef.current) {
         socketRef.current.close();
       }
-      setConnection("closed");
+      useFleetStore.getState().setConnection("closed");
     };
-  }, [mergeDriverUpdate, setConnection]);
+  }, []);
 }
