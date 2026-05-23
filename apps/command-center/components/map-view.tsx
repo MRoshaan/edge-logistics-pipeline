@@ -42,6 +42,17 @@ const DEFAULT_MARKER_ICON = L.icon({
   shadowSize: [41, 41],
 });
 
+const BUSY_MARKER_ICON = L.icon({
+  iconRetinaUrl: markerIcon2xUrl,
+  iconUrl: markerIconUrl,
+  shadowUrl: markerShadowUrl,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+  className: "busy-driver-marker",
+});
+
 function patchLeafletDefaultIcon() {
   if (isLeafletIconPatched) {
     return;
@@ -152,7 +163,10 @@ function DriverMarker({ driver }: { driver: NearestDriver }) {
   }, [lat, lon]);
 
   return (
-    <Marker position={position} icon={DEFAULT_MARKER_ICON}>
+    <Marker
+      position={position}
+      icon={driver.status === "busy" ? BUSY_MARKER_ICON : DEFAULT_MARKER_ICON}
+    >
       <Popup>
         <div>
           <div>{driver.driverId}</div>

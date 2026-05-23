@@ -19,3 +19,8 @@ export type NearestDriversResponse = {
   limit: number;
   drivers: NearestDriver[];
 };
+
+export type DispatchAssignRequest = {
+  driverId: string;
+  dispatcherId: string;
+};

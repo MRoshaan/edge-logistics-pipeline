@@ -1,4 +1,4 @@
-import { NearestDriversResponse } from "@/lib/types";
+import { DispatchAssignRequest, NearestDriversResponse } from "@/lib/types";
 
 type FetchNearestDriversParams = {
   longitude: number;
@@ -39,4 +39,31 @@ export async function fetchNearestDrivers({
     limit: data.limit ?? 5,
     drivers: Array.isArray(data.drivers) ? data.drivers : [],
   };
+}
+
+export async function assignDriver(payload: DispatchAssignRequest): Promise<void> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
+  const url = `${baseUrl}/api/v1/dispatch/assign`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const err = new Error(`Assign failed: ${response.status}`) as Error & {
+      status?: number;
+      body?: unknown;
+    };
+    err.status = response.status;
+    try {
+      err.body = await response.json();
+    } catch {
+      err.body = null;
+    }
+    throw err;
+  }
 }

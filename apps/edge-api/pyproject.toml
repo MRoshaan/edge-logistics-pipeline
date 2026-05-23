@@ -9,6 +9,7 @@ dependencies = [
   "motor>=3.6.0",
   "pydantic>=2.7.0",
   "pydantic-settings>=2.2.1",
+  "redis>=5.0.8",
 ]
 
 [project.optional-dependencies]

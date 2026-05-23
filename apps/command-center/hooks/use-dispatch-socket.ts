@@ -91,7 +91,10 @@ export function useDispatchSocket() {
           const parsed = JSON.parse(event.data) as DispatchEvent;
           console.log("Dispatch WS event", parsed);
           useFleetStore.getState().markSocketMessage(parsed.timestamp);
-          if (parsed.type === "driver.location.updated" && parsed.payload) {
+          if (
+            (parsed.type === "driver.location.updated" || parsed.type === "driver.status.updated") &&
+            parsed.payload
+          ) {
             useFleetStore.getState().mergeDriverEvent({
               driver: parsed.payload,
               seq: parsed.seq,

@@ -25,3 +25,7 @@ body {
     radial-gradient(900px 400px at 0% 0%, rgba(11, 174, 204, 0.15), transparent 60%),
     radial-gradient(500px 500px at 90% 20%, rgba(22, 74, 93, 0.2), transparent 70%);
 }
+
+.busy-driver-marker {
+  filter: hue-rotate(130deg) saturate(1.6) brightness(0.95);
+}

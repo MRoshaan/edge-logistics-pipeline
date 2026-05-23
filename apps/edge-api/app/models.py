@@ -87,3 +87,8 @@ class DriverLocationEvent(BaseModel):
     type: str = "driver.location.updated"
     timestamp: datetime
     payload: NearestDriverOut
+
+
+class DispatchAssignIn(BaseModel):
+    driverId: str = Field(min_length=3, max_length=128)
+    dispatcherId: str = Field(min_length=3, max_length=128)
