@@ -8,6 +8,7 @@ from app.services.database import close_database, ping_database
 from app.settings import get_settings
 
 settings = get_settings()
+ALLOWED_ORIGINS = [settings.allowed_origin, "http://localhost:3001"]
 
 app = FastAPI(title="Fleet Edge API", version="0.1.0")
 
@@ -15,15 +16,18 @@ app = FastAPI(title="Fleet Edge API", version="0.1.0")
 @app.on_event("startup")
 async def startup_event() -> None:
     await ping_database()
+    await manager.start_pubsub_listener()
 
 
 @app.on_event("shutdown")
 async def shutdown_event() -> None:
+    await manager.stop_pubsub_listener()
     await close_database()
+
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.allowed_origin],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
@@ -33,7 +37,7 @@ app.add_middleware(
 @app.websocket("/ws/dispatch")
 async def dispatch_socket(websocket: WebSocket) -> None:
     origin = websocket.headers.get("origin", "")
-    if origin and origin != settings.allowed_origin:
+    if origin and origin not in ALLOWED_ORIGINS:
         await websocket.close(code=1008)
         return
 
@@ -54,5 +58,6 @@ async def dispatch_socket(websocket: WebSocket) -> None:
         manager.disconnect(websocket)
     except Exception:
         manager.disconnect(websocket)
+
 
 app.include_router(router, prefix="/api/v1")
