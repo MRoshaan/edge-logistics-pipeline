@@ -13,12 +13,14 @@ type DispatchEvent = {
   payload?: {
     id?: string;
     driverId?: string;
+    driverName?: string;
+    plateNumber?: string;
     status?: "online" | "active" | "busy" | "offline";
     distanceMeters?: number;
     location?: { type: "Point"; coordinates: [number, number] };
     speedKph?: number;
     heading?: number;
-    vehicleType?: "sedan" | "bike" | "rickshaw";
+    vehicleType?: "Car" | "Bike";
     updatedAt?: string;
   };
 };

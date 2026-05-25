@@ -135,6 +135,8 @@ export const useFleetStore = create<FleetState>((set) => ({
       const merged: NearestDriver = {
         id: driver.id ?? existing?.id ?? key,
         driverId: key,
+        driverName: driver.driverName ?? existing?.driverName ?? key,
+        plateNumber: driver.plateNumber ?? existing?.plateNumber ?? "KHI-0000",
         status: driver.status ?? existing?.status ?? "online",
         distanceMeters,
         location: driver.location,

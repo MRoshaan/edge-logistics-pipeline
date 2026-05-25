@@ -47,7 +47,9 @@ export function DispatchTable({ drivers }: DispatchTableProps) {
         <table className="w-full text-sm">
           <thead className="text-left text-muted-foreground">
             <tr>
-              <th className="pb-2">Driver</th>
+              <th className="pb-2">Name</th>
+              <th className="pb-2">Plate</th>
+              <th className="pb-2">Vehicle</th>
               <th className="pb-2">Status</th>
               <th className="pb-2">Distance</th>
               <th className="pb-2">Action</th>
@@ -56,15 +58,35 @@ export function DispatchTable({ drivers }: DispatchTableProps) {
           <tbody>
             {drivers.length === 0 ? (
               <tr>
-                <td className="py-3 text-muted-foreground" colSpan={4}>
+                <td className="py-3 text-muted-foreground" colSpan={6}>
                   No active drivers in range.
                 </td>
               </tr>
             ) : (
               drivers.map((driver) => (
                 <tr key={driver.id} className="border-t border-border/50">
-                  <td className="py-2">{driver.driverId}</td>
-                  <td className="py-2 capitalize">{driver.status}</td>
+                  <td className="py-2">
+                    <div className="font-medium">{driver.driverName}</div>
+                    <div className="text-xs text-muted-foreground">ID: {driver.driverId}</div>
+                  </td>
+                  <td className="py-2 font-mono text-xs">{driver.plateNumber}</td>
+                  <td className="py-2">{driver.vehicleType}</td>
+                  <td className="py-2">
+                    <span
+                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${
+                        driver.status === "busy"
+                          ? "bg-red-500/20 text-red-300"
+                          : "bg-emerald-500/20 text-emerald-300"
+                      }`}
+                    >
+                      <span
+                        className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full ${
+                          driver.status === "busy" ? "bg-red-400" : "bg-emerald-400"
+                        }`}
+                      />
+                      {driver.status}
+                    </span>
+                  </td>
                   <td className="py-2">{Math.round(driver.distanceMeters)} m</td>
                   <td className="py-2">
                     <button

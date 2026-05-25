@@ -42,6 +42,11 @@ class GeoPoint(BaseModel):
 Meters = Annotated[float, Field(ge=0)]
 
 
+class VehicleType(str, Enum):
+    car = "Car"
+    bike = "Bike"
+
+
 class DriverTelemetryIn(BaseModel):
     driverId: str = Field(min_length=3, max_length=64)
     status: DriverStatus
@@ -54,9 +59,14 @@ class DriverTelemetryIn(BaseModel):
 class NearestDriverOut(BaseModel):
     id: str
     driverId: str
+    driverName: str
+    plateNumber: str
+    vehicleType: VehicleType
     status: DriverStatus
     distanceMeters: Meters
     location: GeoPoint
+    heading: float | None = Field(default=None, ge=0, le=360)
+    speedKph: float | None = Field(default=None, ge=0, le=240)
     updatedAt: datetime
 
 

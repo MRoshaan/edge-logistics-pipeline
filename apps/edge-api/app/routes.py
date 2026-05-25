@@ -14,6 +14,7 @@ from app.models import (
     NearestDriverOut,
     NearestDriversQuery,
     NearestDriversResponse,
+    VehicleType,
 )
 from app.services.database import get_database, redis_client
 router = APIRouter()
@@ -79,9 +80,14 @@ async def assign_driver(payload: DispatchAssignIn) -> dict:
         event_payload = NearestDriverOut(
             id=str(doc.get("_id", payload.driverId)),
             driverId=doc.get("driverId", payload.driverId),
+            driverName=doc.get("driverName", "Unknown Driver"),
+            plateNumber=doc.get("plateNumber", "KHI-0000"),
+            vehicleType=VehicleType(doc.get("vehicleType", VehicleType.car.value)),
             status=DriverStatus(doc.get("status", DriverStatus.busy.value)),
             distanceMeters=0,
             location=doc.get("location", {"type": "Point", "coordinates": [67.0011, 24.8607]}),
+            heading=doc.get("heading"),
+            speedKph=doc.get("speedKph"),
             updatedAt=doc.get("updatedAt", now),
         )
         event = DriverLocationEvent(
@@ -128,9 +134,14 @@ async def nearest_drivers(
             "$project": {
                 "_id": 1,
                 "driverId": 1,
+                "driverName": 1,
+                "plateNumber": 1,
+                "vehicleType": 1,
                 "status": 1,
                 "location": 1,
                 "distanceMeters": 1,
+                "heading": 1,
+                "speedKph": 1,
                 "updatedAt": 1,
             }
         },
@@ -144,9 +155,14 @@ async def nearest_drivers(
             NearestDriverOut(
                 id=str(doc["_id"]),
                 driverId=doc.get("driverId", str(doc["_id"])),
+                driverName=doc.get("driverName", "Unknown Driver"),
+                plateNumber=doc.get("plateNumber", "KHI-0000"),
+                vehicleType=VehicleType(doc.get("vehicleType", VehicleType.car.value)),
                 status=DriverStatus(doc["status"]),
                 distanceMeters=float(doc["distanceMeters"]),
                 location=doc["location"],
+                heading=doc.get("heading"),
+                speedKph=doc.get("speedKph"),
                 updatedAt=doc["updatedAt"],
             )
         )

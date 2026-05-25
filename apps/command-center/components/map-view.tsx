@@ -37,11 +37,8 @@ function vehicleIcon(status: NearestDriver["status"]) {
 }
 
 function vehicleGlyph(driver: NearestDriver): string {
-  if (driver.vehicleType === "bike") {
+  if (driver.vehicleType === "Bike") {
     return "🏍️";
-  }
-  if (driver.vehicleType === "rickshaw") {
-    return "🛺";
   }
   return driver.status === "busy" ? "🚕" : "🚗";
 }
@@ -178,7 +175,10 @@ function DriverMarker({ driver }: { driver: NearestDriver }) {
     >
       <Popup>
         <div>
-          <div>{driver.driverId}</div>
+          <div className="font-semibold">{driver.driverName}</div>
+          <div className="text-xs text-muted-foreground">{driver.plateNumber}</div>
+          <div className="text-xs text-muted-foreground">{driver.vehicleType}</div>
+          <div className="text-xs text-muted-foreground">Heading: {Math.round(driver.heading ?? 0)}°</div>
           <div>Status: {driver.status}</div>
           <div>{Math.round(driver.distanceMeters)} m away</div>
         </div>
