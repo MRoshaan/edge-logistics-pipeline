@@ -3,14 +3,13 @@
 import "leaflet/dist/leaflet.css";
 
 import L from "leaflet";
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import dynamic from "next/dynamic";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import { Marker as LeafletMarker } from "leaflet";
 import { useMap, useMapEvents } from "react-leaflet";
 
 import { NearestDriver } from "@/lib/types";
+import { bearingDegrees } from "@/lib/utils";
 
 const MapContainer = dynamic(
   async () => (await import("react-leaflet")).MapContainer,
@@ -26,50 +25,25 @@ const Popup = dynamic(async () => (await import("react-leaflet")).Popup, {
   ssr: false,
 });
 
-let isLeafletIconPatched = false;
-
-const markerIconUrl = typeof markerIcon === "string" ? markerIcon : markerIcon.src;
-const markerIcon2xUrl = typeof markerIcon2x === "string" ? markerIcon2x : markerIcon2x.src;
-const markerShadowUrl = typeof markerShadow === "string" ? markerShadow : markerShadow.src;
-
-const DEFAULT_MARKER_ICON = L.icon({
-  iconRetinaUrl: markerIcon2xUrl,
-  iconUrl: markerIconUrl,
-  shadowUrl: markerShadowUrl,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-
-const BUSY_MARKER_ICON = L.icon({
-  iconRetinaUrl: markerIcon2xUrl,
-  iconUrl: markerIconUrl,
-  shadowUrl: markerShadowUrl,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-  className: "busy-driver-marker",
-});
-
-function patchLeafletDefaultIcon() {
-  if (isLeafletIconPatched) {
-    return;
-  }
-
-  delete (L.Icon.Default.prototype as L.Icon.Default & { _getIconUrl?: unknown })._getIconUrl;
-  L.Icon.Default.mergeOptions({
-    iconRetinaUrl: markerIcon2xUrl,
-    iconUrl: markerIconUrl,
-    shadowUrl: markerShadowUrl,
+function vehicleIcon(status: NearestDriver["status"]) {
+  const stateClass = status === "busy" ? "busy" : "online";
+  return L.divIcon({
+    className: `vehicle-marker ${stateClass}`,
+    html: `<div class="vehicle-marker-inner"><span class="vehicle-glyph">🚗</span></div>`,
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+    popupAnchor: [0, -16],
   });
-
-  isLeafletIconPatched = true;
 }
 
-if (typeof window !== "undefined") {
-  patchLeafletDefaultIcon();
+function vehicleGlyph(driver: NearestDriver): string {
+  if (driver.vehicleType === "bike") {
+    return "🏍️";
+  }
+  if (driver.vehicleType === "rickshaw") {
+    return "🛺";
+  }
+  return driver.status === "busy" ? "🚕" : "🚗";
 }
 
 type MapViewProps = {
@@ -128,44 +102,79 @@ export function MapView({ center, drivers, onMapClick }: MapViewProps) {
 
 function DriverMarker({ driver }: { driver: NearestDriver }) {
   const [lon, lat] = driver.location.coordinates;
-  const [position, setPosition] = useState<[number, number]>([lat, lon]);
-  const animationRef = useRef<number | null>(null);
+  const markerRef = useRef<LeafletMarker | null>(null);
+  const previousRef = useRef<{ lat: number; lon: number } | null>(null);
+  const lastBearingRef = useRef<number>(driver.heading ?? 0);
+
+  const icon = useMemo(() => vehicleIcon(driver.status), [driver.status]);
+  const animationMs = useMemo(() => {
+    const speed = driver.speedKph ?? 40;
+    const normalized = Math.max(20, Math.min(80, speed));
+    // Faster vehicle -> slightly shorter animation for natural pacing
+    const value = 3600 - (normalized - 20) * 25;
+    return Math.max(1800, Math.min(3600, Math.round(value)));
+  }, [driver.speedKph]);
 
   useEffect(() => {
-    const start = position;
-    const target: [number, number] = [lat, lon];
-    const startTime = performance.now();
-    const durationMs = 800;
-
-    const step = (currentTime: number) => {
-      const t = Math.min((currentTime - startTime) / durationMs, 1);
-      const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-      setPosition([
-        start[0] + (target[0] - start[0]) * eased,
-        start[1] + (target[1] - start[1]) * eased,
-      ]);
-
-      if (t < 1) {
-        animationRef.current = requestAnimationFrame(step);
-      }
-    };
-
-    if (animationRef.current !== null) {
-      cancelAnimationFrame(animationRef.current);
+    const marker = markerRef.current;
+    if (!marker) {
+      previousRef.current = { lat, lon };
+      return;
     }
-    animationRef.current = requestAnimationFrame(step);
 
-    return () => {
-      if (animationRef.current !== null) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [lat, lon]);
+    marker.setLatLng([lat, lon]);
+
+    const markerElement = marker.getElement();
+    if (!markerElement) {
+      previousRef.current = { lat, lon };
+      return;
+    }
+
+    markerElement.style.transitionDuration = `${animationMs}ms`;
+
+    const previous = previousRef.current;
+    const computedBearing = previous ? bearingDegrees(previous.lat, previous.lon, lat, lon) : null;
+    const nextBearing =
+      computedBearing !== null && Number.isFinite(computedBearing)
+        ? computedBearing
+        : (driver.heading ?? lastBearingRef.current);
+    lastBearingRef.current = nextBearing;
+
+    const glyph = markerElement.querySelector(".vehicle-glyph") as HTMLElement | null;
+    if (glyph) {
+      glyph.style.transform = `rotate(${nextBearing.toFixed(2)}deg)`;
+    }
+
+    previousRef.current = { lat, lon };
+  }, [animationMs, lat, lon]);
+
+
+  useEffect(() => {
+    const marker = markerRef.current;
+    if (!marker) {
+      return;
+    }
+
+    const markerElement = marker.getElement();
+    if (!markerElement) {
+      return;
+    }
+
+    const glyph = markerElement.querySelector(".vehicle-glyph") as HTMLElement | null;
+    if (!glyph) {
+      return;
+    }
+
+    glyph.textContent = vehicleGlyph(driver);
+  }, [driver.status, driver.vehicleType]);
 
   return (
     <Marker
-      position={position}
-      icon={driver.status === "busy" ? BUSY_MARKER_ICON : DEFAULT_MARKER_ICON}
+      position={[lat, lon]}
+      icon={icon}
+      ref={(marker) => {
+        markerRef.current = marker as LeafletMarker | null;
+      }}
     >
       <Popup>
         <div>

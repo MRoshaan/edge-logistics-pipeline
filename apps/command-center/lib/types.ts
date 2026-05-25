@@ -1,5 +1,7 @@
 export type DriverStatus = "online" | "active" | "busy" | "offline";
 
+export type VehicleType = "sedan" | "bike" | "rickshaw";
+
 export type GeoPoint = {
   type: "Point";
   coordinates: [number, number];
@@ -11,6 +13,9 @@ export type NearestDriver = {
   status: DriverStatus;
   distanceMeters: number;
   location: GeoPoint;
+  speedKph?: number;
+  heading?: number;
+  vehicleType?: VehicleType;
   updatedAt?: string;
 };
 

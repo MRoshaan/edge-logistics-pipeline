@@ -16,6 +16,9 @@ type DispatchEvent = {
     status?: "online" | "active" | "busy" | "offline";
     distanceMeters?: number;
     location?: { type: "Point"; coordinates: [number, number] };
+    speedKph?: number;
+    heading?: number;
+    vehicleType?: "sedan" | "bike" | "rickshaw";
     updatedAt?: string;
   };
 };

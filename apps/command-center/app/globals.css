@@ -29,3 +29,35 @@ body {
 .busy-driver-marker {
   filter: hue-rotate(130deg) saturate(1.6) brightness(0.95);
 }
+
+.leaflet-marker-icon.vehicle-marker {
+  background: transparent !important;
+  border: 0 !important;
+  transition: transform 3s linear !important;
+  will-change: transform;
+}
+
+.vehicle-marker-inner {
+  width: 30px;
+  height: 30px;
+  border-radius: 9999px;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+.vehicle-marker.online .vehicle-marker-inner {
+  background: #2563eb;
+}
+
+.vehicle-marker.busy .vehicle-marker-inner {
+  background: #dc2626;
+}
+
+.vehicle-glyph {
+  display: inline-block;
+  transition: transform 0.45s ease-out;
+  transform-origin: center center;
+  font-size: 16px;
+  line-height: 1;
+}

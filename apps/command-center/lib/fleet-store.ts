@@ -138,6 +138,9 @@ export const useFleetStore = create<FleetState>((set) => ({
         status: driver.status ?? existing?.status ?? "online",
         distanceMeters,
         location: driver.location,
+        speedKph: driver.speedKph ?? existing?.speedKph,
+        heading: driver.heading ?? existing?.heading,
+        vehicleType: driver.vehicleType ?? existing?.vehicleType,
         updatedAt: incomingTimestamp ?? existing?.updatedAt,
       };
 
